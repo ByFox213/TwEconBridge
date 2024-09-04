@@ -12,7 +12,8 @@ from patterns import dd_patterns
 
 load_dotenv()
 
-MESSAGE_THREAD_ID = os.getenv("MESSAGE_THREAD_ID")
+channel_id = os.getenv("channel_id")
+
 nats_connect = {
     "servers": os.getenv("nats_server"),
     "user": os.getenv("nats_user"),
@@ -42,11 +43,11 @@ class Bridge:
         self.nc = await nats.connect(**nats_connect)
         self.js = self.nc.jetstream()
         await self.js.subscribe(
-            f"teesports.{MESSAGE_THREAD_ID}",
-            f"bridge_{MESSAGE_THREAD_ID}",
+            f"teesports.{channel_id}",
+            f"bridge_{channel_id}",
             cb=self.message_handler_bridge
         )
-        logging.info("nats js subscribe \"teesports.%s\"", MESSAGE_THREAD_ID)
+        logging.info("nats js subscribe \"teesports.%s\"", channel_id)
         print("connected to econ and nats")
 
     async def message_handler_bridge(self, message):
@@ -68,7 +69,10 @@ class Bridge:
                     regex = pattern.findall(msg)
                     if regex:
                         send_message = regex[0]
-                        js = json.dumps({"chat_id": MESSAGE_THREAD_ID, "text": send_message})
+                        js = json.dumps({
+                            "channel_id": channel_id,
+                            "text": send_message
+                        })
                         logging.debug("teesports.messages > %s", js)
                         await self.js.publish("teesports.messages", js.encode())
 

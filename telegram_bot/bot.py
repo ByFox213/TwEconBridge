@@ -29,7 +29,7 @@ nats_connect = {
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="bot.log",
+    filename="telegram_bot.log",
     filemode="w",
     format="%(asctime)s %(levelname)s %(message)s"
 )
@@ -44,7 +44,7 @@ async def message_handler_telegram(message: Msg):
     text = msg["text"]
     if isinstance(text, list):
         text = " ".join(text)
-    await next(bots).send_message(chat_id, text, message_thread_id=msg["chat_id"])
+    await next(bots).send_message(chat_id, text, message_thread_id=msg["channel_id"])
     await message.ack()
 
 
@@ -55,7 +55,7 @@ async def main():
     js = nc.jetstream()
 
     await js.add_stream(name='teesports', subjects=['teesports.*'], max_msgs=5000)
-    await js.subscribe("teesports.messages", "bot", cb=message_handler_telegram)
+    await js.subscribe("teesports.messages", "telegram_bot", cb=message_handler_telegram)
     logging.info("nats js subscribe \"teesports.messages\"")
 
     @bot.message_handler(func=lambda message: True)
