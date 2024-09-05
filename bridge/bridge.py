@@ -14,18 +14,13 @@ load_dotenv()
 
 channel_id = os.getenv("channel_id")
 
-nats_connect = {
-    "servers": os.getenv("nats_server"),
-    "user": os.getenv("nats_user"),
-    "password": os.getenv("nats_password")
-}
-econ_connect = (os.getenv("econ_host"), os.getenv("econ_port"), os.getenv("econ_password"))
 
 logging.basicConfig(
     level=logging.DEBUG,
     filename="bridge.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(message)s"
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
+    encoding='utf-8',
+    filemode="w"
 )
 
 
@@ -37,11 +32,18 @@ class Bridge:
         self.patterns = [re.compile(i) for _, i in dd_patterns.copy().items()]
 
     async def connect(self):
-        self.econ = AsyncECON(*econ_connect)
-        await self.econ.connect()
-
-        self.nc = await nats.connect(**nats_connect)
+        self.econ = AsyncECON(
+            os.getenv("econ_host"),
+            int(os.getenv("econ_port")),
+            os.getenv("econ_password")
+        )
+        self.nc = await nats.connect(
+            servers=os.getenv("nats_server"),
+            user=os.getenv("nats_user"),
+            password=os.getenv("nats_password")
+        )
         self.js = self.nc.jetstream()
+        await self.econ.connect()
         await self.js.subscribe(
             f"teesports.{channel_id}",
             f"bridge_{channel_id}",
@@ -60,7 +62,8 @@ class Bridge:
     async def main(self):
         await self.connect()
         logging.info("nats connected and econ connected")
-
+        if channel_id is None:
+            raise ValueError("channel_id is None")
         while True:
             message = await self.econ.read()
             if message:

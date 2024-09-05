@@ -3,5 +3,9 @@
 pip install -r requirements.txt
 ```
 
-change .env_example to .env and specify the data
+Rename .env_example to .env fill in the data in .env and you can run the program.
+```bash
+python bridge.py
+```
+Good luck using
  

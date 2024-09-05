@@ -21,17 +21,12 @@ bots = cycle(bots)  # Bypass rate limit
 
 chat_id = os.getenv("chat_id")
 
-nats_connect = {
-    "servers": os.getenv("nats_servers"),
-    "user": os.getenv("nats_user"),
-    "password": os.getenv("nats_password")
-}
-
 logging.basicConfig(
     level=logging.DEBUG,
     filename="telegram_bot.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(message)s"
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
+    encoding='utf-8',
+    filemode="w"
 )
 
 text_bridge = os.getenv("text_bot_to_bridge", "[TG] {name}: {text}")
@@ -40,16 +35,18 @@ text_bridge = os.getenv("text_bot_to_bridge", "[TG] {name}: {text}")
 async def message_handler_telegram(message: Msg):
     await message.in_progress()
     msg = json.loads(message.data.decode())
-    logging.debug("teesports.chat_id > %s", msg)
-    text = msg["text"]
-    if isinstance(text, list):
-        text = " ".join(text)
+    logging.debug("teesports.{chat_id} > %s", msg)
+    text = " ".join(msg["text"]) if isinstance(msg["text"], list) else msg["text"]
     await next(bots).send_message(chat_id, text, message_thread_id=msg["channel_id"])
     await message.ack()
 
 
 async def main():
-    nc = await nats.connect(**nats_connect)
+    nc = await nats.connect(
+        servers=os.getenv("nats_servers"),
+        user=os.getenv("nats_user"),
+        password=os.getenv("nats_password")
+    )
     logging.info("nats connected")
     print("nats connected")
     js = nc.jetstream()

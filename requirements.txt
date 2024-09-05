@@ -3,3 +3,4 @@ ddecon
 pyTelegramBotAPI
 aiohttp
 python-dotenv
+nextcord
