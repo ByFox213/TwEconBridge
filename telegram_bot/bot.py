@@ -33,6 +33,7 @@ text_bridge = os.getenv("text_bot_to_bridge", "[TG] {name}: {text}")
 
 
 async def message_handler_telegram(message: Msg):
+    """Takes a message from nats and sends it to telegram."""
     await message.in_progress()
     msg = json.loads(message.data.decode())
     logging.debug("teesports.{chat_id} > %s", msg)

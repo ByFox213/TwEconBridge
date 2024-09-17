@@ -4736,4 +4736,5 @@ FROM_EMOJIES = {
 
 
 def replace_from_emoji(text: str) -> str:
-	return ''.join([FROM_EMOJIES.get(i, i) for i in text])
+    """Replaces emoji with their title."""
+    return ''.join([FROM_EMOJIES.get(i, i) for i in text])
