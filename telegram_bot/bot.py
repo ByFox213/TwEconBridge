@@ -14,12 +14,15 @@ from emojies import replace_from_emoji
 
 load_dotenv()
 
-bots = [AsyncTeleBot(token) for token in os.getenv("TELEGRAM_BOT_TOKENS").split(" ")]
+bots = [
+    AsyncTeleBot(token)
+    for token in os.getenv("TELEGRAM_BOT_TOKENS").split(" ")
+]  # Bypass rate limit
 bot = bots[0]
-
-bots = cycle(bots)  # Bypass rate limit
+bots = cycle(bots)
 
 chat_id = os.getenv("chat_id")
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,7 +47,7 @@ async def message_handler_telegram(message: Msg):
 
 async def main():
     nc = await nats.connect(
-        servers=os.getenv("nats_servers"),
+        servers=os.getenv("nats_server"),
         user=os.getenv("nats_user"),
         password=os.getenv("nats_password")
     )
@@ -58,13 +61,13 @@ async def main():
 
     @bot.message_handler(func=lambda message: True)
     async def echo_to_bridge(message: telebot.types.Message):
-        if not js:
+        if not js or message is None:
             return
 
         name = message.from_user.first_name + (message.from_user.last_name or '')
         await js.publish(
             f"teesports.{message.message_thread_id}",
-            text_bridge.format(name=name, text=replace_from_emoji(message.text)).encode()
+            text_bridge.format(name=name, text=replace_from_emoji(message.text))[:255].encode()
         )
 
     await bot.infinity_polling()

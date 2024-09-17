@@ -59,7 +59,11 @@ class Bridge:
     async def message_handler_bridge(self, message):
         await message.in_progress()
         data = message.data.decode()
-        await self.econ.message(data)
+        await self.econ.message(
+            data
+            .replace("\"", "\\\"")
+            .replace("\'", "\\'")
+        )
         await message.ack()
         logging.debug("teesports.chat_id > %s", data)
 
@@ -70,18 +74,21 @@ class Bridge:
             raise ValueError("channel_id is None")
         while True:
             message = await self.econ.read()
-            if message:
-                msg = message.decode()[:-3]
-                for pattern in self.patterns:
-                    regex = pattern.findall(msg)
-                    if regex:
-                        send_message = regex[0]
-                        js = json.dumps({
-                            "channel_id": channel_id,
-                            "text": send_message
-                        })
-                        logging.debug("teesports.messages > %s", js)
-                        await self.js.publish("teesports.messages", js.encode())
+            if not message:
+                await asyncio.sleep(0.5)
+                continue
+            msg = message.decode()[:-3]
+            for pattern in self.patterns:
+                regex = pattern.findall(msg)
+                if not regex:
+                    continue
+                send_message = regex[0]
+                js = json.dumps({
+                    "channel_id": channel_id,
+                    "text": send_message
+                })
+                logging.debug("teesports.messages > %s", js)
+                await self.js.publish("teesports.messages", js.encode())
 
 
 if __name__ == '__main__':
