@@ -22,7 +22,7 @@ bots = cycle(bots)  # Bypass rate limit
 chat_id = os.getenv("chat_id")
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     filename="telegram_bot.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',

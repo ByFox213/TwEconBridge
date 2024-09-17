@@ -16,7 +16,7 @@ channel_id = os.getenv("channel_id")
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     filename="bridge.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',
@@ -27,9 +27,12 @@ logging.basicConfig(
 class Bridge:
     def __init__(self):
         self.econ = None
-        self.nc = None
+        self.ns = None
         self.js = None
-        self.patterns = [re.compile(i) for _, i in dd_patterns.copy().items()]
+        self.patterns = [
+            re.compile(i)
+            for _, i in dd_patterns.copy().items()
+        ]
 
     async def connect(self):
         self.econ = AsyncECON(
@@ -37,12 +40,13 @@ class Bridge:
             int(os.getenv("econ_port")),
             os.getenv("econ_password")
         )
-        self.nc = await nats.connect(
+        self.ns = await nats.connect(
             servers=os.getenv("nats_server"),
             user=os.getenv("nats_user"),
             password=os.getenv("nats_password")
         )
-        self.js = self.nc.jetstream()
+        self.js = self.ns.jetstream()
+
         await self.econ.connect()
         await self.js.subscribe(
             f"teesports.{channel_id}",
