@@ -8,53 +8,66 @@ import nats
 import telebot.types
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
-from nats.aio.msg import Msg
+from nats.aio.msg import Msg as MsgNats
+from telebot.asyncio_helper import ApiTelegramException
 
+from model import Env, Msg
 from emojies import replace_from_emoji
 
 load_dotenv()
+env = Env(**os.environ)
 
 bots = [
     AsyncTeleBot(token)
-    for token in os.getenv("TELEGRAM_BOT_TOKENS").split(" ")
+    for token in env.TELEGRAM_BOT_TOKENS.split(" ")
 ]  # Bypass rate limit
 bot = bots[0]
 bots = cycle(bots)
 
-chat_id = os.getenv("chat_id")
-
+buffer = {}
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     filename="telegram_bot.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',
     filemode="w"
 )
 
-text_bridge = os.getenv("text_bot_to_bridge", "[TG] {name}: {text}")
 
-
-async def message_handler_telegram(message: Msg):
+async def message_handler_telegram(message: MsgNats):
     """Takes a message from nats and sends it to telegram."""
     await message.in_progress()
-    msg = json.loads(message.data.decode())
-    logging.debug("teesports.{chat_id} > %s", msg)
-    text = " ".join(msg["text"]) if isinstance(msg["text"], list) else msg["text"]
-    await next(bots).send_message(chat_id, text, message_thread_id=msg["channel_id"])
-    await message.ack()
+    msg = Msg(**json.loads(message.data.decode()))
+    text = f"{msg.name}: {msg.text}" if msg.name is not None else f"{msg.text}"
+    logging.debug("teesports.%s > %s", msg.channel_id, msg.text)
+
+    if buffer.get(msg.channel_id) is None:
+        buffer[msg.channel_id] = []
+
+    if buffer[msg.channel_id]:
+        text = "\n".join(buffer[msg.channel_id] + [text])
+        buffer[msg.channel_id].clear()
+    try:
+        await next(bots).send_message(env.chat_id, text, message_thread_id=msg.channel_id)
+    except ApiTelegramException:
+        logging.debug("Заглушка ApiTelegramException")
+        buffer[msg.channel_id].append(text)
+
+    return await message.ack()
 
 
 async def main():
     nc = await nats.connect(
-        servers=os.getenv("nats_server"),
-        user=os.getenv("nats_user"),
-        password=os.getenv("nats_password")
+        servers=env.nats_server,
+        user=env.nats_user,
+        password=env.nats_password
     )
     logging.info("nats connected")
     print("nats connected")
     js = nc.jetstream()
 
+    # await js.delete_stream("teesports")
     await js.add_stream(name='teesports', subjects=['teesports.*'], max_msgs=5000)
     await js.subscribe("teesports.messages", "telegram_bot", cb=message_handler_telegram)
     logging.info("nats js subscribe \"teesports.messages\"")
@@ -64,10 +77,12 @@ async def main():
         if not js or message is None:
             return
 
-        name = message.from_user.first_name + (message.from_user.last_name or '')
         await js.publish(
             f"teesports.{message.message_thread_id}",
-            text_bridge.format(name=name, text=replace_from_emoji(message.text))[:255].encode()
+            env.text_bot_to_bridge.format(
+                name=message.from_user.first_name + (message.from_user.last_name or ''),
+                text=replace_from_emoji(message.text)
+            )[:255].encode()
         )
 
     await bot.infinity_polling()

@@ -4,3 +4,5 @@ pyTelegramBotAPI
 aiohttp
 python-dotenv
 nextcord
+pydantic
+schedule

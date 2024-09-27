@@ -11,11 +11,7 @@ Turn on "jetstream" in nats
 ```bash
 docker run -p 4222:4222 nats -js
 ```
-[Kubernetes](https://docs.nats.io/running-a-nats-service/configuration/resource_management/configuration_mgmt/kubernetes_controller)
+[Kubernetes](https://docs.nats.io/running-a-nats-service/configuration/resource_management/configuration_mgmt/kubernetes_controller)  
 
-# Run
-```bash
-python bridge.py
-```
 Good luck using
  

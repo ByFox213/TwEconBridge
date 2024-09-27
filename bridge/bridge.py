@@ -2,17 +2,16 @@ import asyncio
 import json
 import logging
 import os
-import re
 
 import nats
 from ddecon import AsyncECON
 from dotenv import load_dotenv
+from aiomultiprocess import Worker
 
-from patterns import dd_patterns
+from model import Env
 
 load_dotenv()
-
-channel_id = os.getenv("channel_id")
+env = Env(**os.environ)
 
 
 logging.basicConfig(
@@ -29,31 +28,23 @@ class Bridge:
         self.econ = None
         self.ns = None
         self.js = None
-        self.patterns = [
-            re.compile(i)
-            for _, i in dd_patterns.copy().items()
-        ]
 
     async def connect(self):
-        self.econ = AsyncECON(
-            os.getenv("econ_host"),
-            int(os.getenv("econ_port")),
-            os.getenv("econ_password")
-        )
+        self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
         self.ns = await nats.connect(
-            servers=os.getenv("nats_server"),
-            user=os.getenv("nats_user"),
-            password=os.getenv("nats_password")
+            servers=env.nats_server,
+            user=env.nats_user,
+            password=env.nats_password
         )
         self.js = self.ns.jetstream()
 
         await self.econ.connect()
         await self.js.subscribe(
-            f"teesports.{channel_id}",
-            f"bridge_{channel_id}",
+            f"teesports.{env.channel_id}",
+            f"bridge_{env.channel_id}",
             cb=self.message_handler_bridge
         )
-        logging.info("nats js subscribe \"teesports.%s\"", channel_id)
+        logging.info("nats js subscribe \"teesports.%s\"", env.channel_id)
         print("connected to econ and nats")
 
     async def message_handler_bridge(self, message):
@@ -70,25 +61,25 @@ class Bridge:
     async def main(self):
         await self.connect()
         logging.info("nats connected and econ connected")
-        if channel_id is None:
+        if env.channel_id is None:
             raise ValueError("channel_id is None")
+        await self.message_checker()
+
+    async def message_checker(self):
         while True:
             message = await self.econ.read()
             if not message:
                 await asyncio.sleep(0.5)
                 continue
-            msg = message.decode()[:-3]
-            for pattern in self.patterns:
-                regex = pattern.findall(msg)
-                if not regex:
-                    continue
-                send_message = regex[0]
-                js = json.dumps({
-                    "channel_id": channel_id,
-                    "text": send_message
-                })
-                logging.debug("teesports.messages > %s", js)
-                await self.js.publish("teesports.messages", js.encode())
+            js = json.dumps(
+                {
+                    "server_name": env.server_name,
+                    "channel_id": env.channel_id,
+                    "text": message.decode()[:-3]
+                }
+            )
+            logging.debug("teesports.handler > %s", js)
+            await self.js.publish("teesports.handler", js.encode())
 
 
 if __name__ == '__main__':
