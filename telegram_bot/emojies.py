@@ -4733,8 +4733,14 @@ FROM_EMOJIES = {
 	"🧟":          ":zombie:",
 	"🇦🇽":         ":aland_islands:",
 }
+FROM_STR = {i: k for k, i in FROM_EMOJIES.items()}
 
 
 def replace_from_emoji(text: str) -> str:
     """Replaces emoji with their title."""
     return ''.join([FROM_EMOJIES.get(i, i) for i in text])
+
+
+def replace_from_str(text: str) -> str:
+    """Replaces emoji with their title."""
+    return ''.join([FROM_STR.get(i, i) for i in text])

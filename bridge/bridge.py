@@ -14,7 +14,7 @@ env = Env(**os.environ)
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     filename="bridge.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',
@@ -29,7 +29,13 @@ class Bridge:
         self.js = None
 
     async def connect(self):
-        self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
+        self.econ = AsyncECON(
+            env.econ_host,
+            env.econ_port,
+            env.econ_password,
+            auth_message=env.auth_message.encode() if env.auth_message is not None else None
+        )
+
         self.ns = await nats.connect(
             servers=env.nats_server,
             user=env.nats_user,
@@ -39,11 +45,11 @@ class Bridge:
 
         await self.econ.connect()
         await self.js.subscribe(
-            f"teesports.{env.channel_id}",
-            f"bridge_{env.channel_id}",
+            f"teesports.{env.message_thread_id}",
+            f"bridge_{env.message_thread_id}",
             cb=self.message_handler_bridge
         )
-        logging.info("nats js subscribe \"teesports.%s\"", env.channel_id)
+        logging.info("nats js subscribe \"teesports.%s\"", env.message_thread_id)
         print("connected to econ and nats")
 
     async def message_handler_bridge(self, message):
@@ -53,6 +59,7 @@ class Bridge:
             data
             .replace("\"", "\\\"")
             .replace("\'", "\\'")
+            .replace("\\", "\\\\")
         )
         await message.ack()
         logging.debug("teesports.chat_id > %s", data)
@@ -60,23 +67,33 @@ class Bridge:
     async def main(self):
         await self.connect()
         logging.info("nats connected and econ connected")
-        if env.channel_id is None:
+        if env.message_thread_id is None:
             raise ValueError("channel_id is None")
         await self.message_checker()
 
     async def message_checker(self):
         while True:
-            message = await self.econ.read()
+            try:
+                message = await self.econ.read()
+            except ConnectionError:
+                if not await self.econ.is_connected():
+                    logging.debug(f"repeat: {env.server_name}({env.econ_host}:{env.econ_port})")
+                    self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
+                await asyncio.sleep(5)
+                continue
+
             if not message:
                 await asyncio.sleep(0.5)
                 continue
+
             js = json.dumps(
                 {
                     "server_name": env.server_name,
-                    "channel_id": env.channel_id,
+                    "message_thread_id": env.message_thread_id,
                     "text": message.decode()[:-3]
                 }
             )
+
             logging.debug("teesports.handler > %s", js)
             await self.js.publish("teesports.handler", js.encode())
 
