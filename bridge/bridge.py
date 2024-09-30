@@ -6,7 +6,6 @@ import os
 import nats
 from ddecon import AsyncECON
 from dotenv import load_dotenv
-from aiomultiprocess import Worker
 
 from model import Env
 
