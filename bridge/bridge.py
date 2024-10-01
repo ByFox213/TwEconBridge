@@ -4,13 +4,25 @@ import logging
 import os
 
 import nats
+import yaml
 from ddecon import AsyncECON
 from dotenv import load_dotenv
 
 from model import Env
 
+
+def get_data_env(_env: Env) -> Env:
+    if os.path.exists("./config.yaml"):
+        with open('./config.yaml', "r", encoding="utf-8") as fh:
+            data = yaml.load(fh, Loader=yaml.FullLoader)
+        _yaml = Env(**data) if data is not None else None
+        if _yaml is not None:
+            return _yaml
+    return _env
+
+
 load_dotenv()
-env = Env(**os.environ)
+env = get_data_env(Env(**os.environ))
 
 
 logging.basicConfig(

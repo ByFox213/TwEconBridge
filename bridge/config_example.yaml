@@ -1,0 +1,8 @@
+message_thread_id: 3
+server_name: Test Server
+nats_server: nats://127.0.0.1:4222
+nats_user: byfox         #  optionally
+nats_password: password  #  optionally
+econ_host: 127.0.0.1
+econ_port: 8303
+econ_password: password

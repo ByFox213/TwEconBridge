@@ -1,3 +1,4 @@
+import ast
 import asyncio
 import json
 import logging
@@ -6,6 +7,7 @@ from itertools import cycle
 
 import nats
 import telebot.types
+import yaml
 from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from nats.aio.msg import Msg as MsgNats
@@ -14,12 +16,25 @@ from telebot.asyncio_helper import ApiTelegramException
 from model import Env, Msg
 from emojies import replace_from_emoji
 
+
+def get_data_env(_env: Env) -> Env:
+    if os.path.exists("./config.yaml"):
+        with open('./config.yaml', "r", encoding="utf-8") as fh:
+            data = yaml.load(fh, Loader=yaml.FullLoader)
+        _yaml = Env(**data) if data is not None else None
+        if _yaml is not None:
+            return _yaml
+    return _env.model_copy(update={
+        "TELEGRAM_BOT_TOKENS": ast.literal_eval(_env.TELEGRAM_BOT_TOKENS)
+    })
+
+
 load_dotenv()
-env = Env(**os.environ)
+env = get_data_env(Env(**os.environ))
 
 bots = [
     AsyncTeleBot(token)
-    for token in env.TELEGRAM_BOT_TOKENS.split(" ")
+    for token in env.TELEGRAM_BOT_TOKENS
 ]  # Bypass rate limit
 bot = bots[0]
 bots = cycle(bots)
@@ -105,7 +120,7 @@ async def main():
 
         replay = ""
         if message.reply_to_message is not None and message.reply_to_message.text is not None:
-            replay = env.text_reply.format(
+            replay = env.reply_string.format(
                 replay_id=message.reply_to_message.id,
                 replay_msg=generate_message(message.reply_to_message),
                 id=message.id,

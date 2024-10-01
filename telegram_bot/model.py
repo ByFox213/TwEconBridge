@@ -2,17 +2,17 @@ from pydantic import BaseModel, Field
 
 
 class Env(BaseModel):
-    TELEGRAM_BOT_TOKENS: str
+    TELEGRAM_BOT_TOKENS: str | list
     chat_id: str
     nats_server: str = Field("127.0.0.1")
     nats_user: str = None
     nats_password: str = None
     text: str = Field("[TG] {name}: {text}")
-    text_sticker: str = Field("[STICKER]")
-    text_video: str = Field("[MEDIA]")
-    text_photo: str = Field("[PHOTO]")
-    text_audio: str = Field("[AUDIO]")
-    text_reply: str = Field("[Reply {replay_id}] {msg}\n")
+    sticker_string: str = Field("[STICKER]")
+    video_string: str = Field("[MEDIA]")
+    photo_string: str = Field("[PHOTO]")
+    audio_string: str = Field("[AUDIO]")
+    reply_string: str = Field("[Reply {replay_id}] {msg}\n")
 
 
 class Msg(BaseModel):

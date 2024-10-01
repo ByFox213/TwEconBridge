@@ -4,7 +4,9 @@ __pycache__/
 *$py.class
 .env
 .idea
-analytics/
+config.yaml
+analytics/*.py
+analytics/*.sql
 
 # C extensions
 *.so
