@@ -15,7 +15,7 @@ load_dotenv()
 env = Env(**os.environ)
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     filename="handler.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',

@@ -27,7 +27,7 @@ bots = cycle(bots)
 buffer = {}
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     filename="telegram_bot.log",
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
     encoding='utf-8',
