@@ -28,11 +28,20 @@ env = get_data_env(Env(**os.environ))
 
 logging.basicConfig(
     level=logging.INFO,
-    filename="handler.log",
-    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
-    encoding='utf-8',
-    filemode="w"
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
+
+
+def generate_text(reg, pattern) -> tuple:
+    if len(reg) == 2:
+        return reg
+    return None, env.text.format(
+        player=reg,
+        text=pattern.data.format(
+            text_leave=env.text_leave,
+            text_join=env.text_join
+        )
+    )
 
 
 class Handler:
@@ -72,16 +81,8 @@ class Handler:
             regex = pattern.regex.findall(msg.text)
             if not regex:
                 continue
-            if len(regex[0]) == 2:
-                name, text = regex[0]
-            else:
-                text = env.text.format(
-                    player=regex[0],
-                    text=pattern.data.format(
-                        text_leave=env.text_leave,
-                        text_join=env.text_join
-                    )
-                )
+
+            name, text = generate_text(regex[0], pattern)
             js = Msg(
                 message_thread_id=msg.message_thread_id,
                 server_name=msg.server_name,
@@ -89,8 +90,10 @@ class Handler:
                 name=name,
                 text=replace_from_str(text)
             ).model_dump_json()
+
             logging.debug("teesports.messages > %s", js)
             await self.js.publish(f"teesports.messages", js.encode())
+
             break
         await message.ack()
 

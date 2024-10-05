@@ -27,10 +27,7 @@ env = get_data_env(Env(**os.environ))
 
 logging.basicConfig(
     level=logging.INFO,
-    filename="bridge.log",
-    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
-    encoding='utf-8',
-    filemode="w"
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
 
 
@@ -66,6 +63,7 @@ class Bridge:
 
     async def message_handler_bridge(self, message):
         await message.in_progress()
+
         data = message.data.decode()
         await self.econ.message(
             data
@@ -73,12 +71,14 @@ class Bridge:
             .replace("\'", "\\'")
             .replace("\\", "\\\\")
         )
+
         await message.ack()
         logging.debug("teesports.chat_id > %s", data)
 
     async def main(self):
         await self.connect()
         logging.info("nats connected and econ connected")
+
         if env.message_thread_id is None:
             raise ValueError("channel_id is None")
         await self.message_checker()

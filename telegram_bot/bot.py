@@ -45,10 +45,7 @@ buffer = {}
 
 logging.basicConfig(
     level=logging.INFO,
-    filename="telegram_bot.log",
-    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s',
-    encoding='utf-8',
-    filemode="w"
+    format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
 
 
@@ -90,6 +87,7 @@ def check_media(message: telebot.types.Message) -> str | None:
 async def message_handler_telegram(message: MsgNats):
     """Takes a message from nats and sends it to telegram."""
     await message.in_progress()
+
     msg = Msg(**json.loads(message.data.decode()))
     text = f"{msg.name}: {msg.text}" if msg.name is not None else f"{msg.text}"
     logging.debug("teesports.%s > %s", msg.message_thread_id, msg.text)
@@ -118,7 +116,6 @@ async def main():
         password=env.nats_password
     )
     logging.info("nats connected")
-    print("nats connected")
     js = nc.jetstream()
 
     # await js.delete_stream("teesports")
