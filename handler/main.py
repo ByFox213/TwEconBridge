@@ -15,7 +15,7 @@ from patterns import dd_patterns
 
 def get_data_env(_env: Env) -> Env:
     if os.path.exists("./config.yaml"):
-        with open('./config.yaml', "r", encoding="utf-8") as fh:
+        with open('./config.yaml', encoding="utf-8") as fh:
             data = yaml.load(fh, Loader=yaml.FullLoader)
         _yaml = Env(**data) if data is not None else None
         if _yaml is not None:
@@ -62,8 +62,8 @@ class Handler:
         self.js = self.ns.jetstream()
 
         await self.js.subscribe(
-            f"teesports.handler",
-            f"handler",
+            "teesports.handler",
+            "handler",
             cb=self.message_handler_bridge
         )
         logging.info("nats js subscribe \"teesports.handler\"")
@@ -92,7 +92,7 @@ class Handler:
             ).model_dump_json()
 
             logging.debug("teesports.messages > %s", js)
-            await self.js.publish(f"teesports.messages", js.encode())
+            await self.js.publish("teesports.messages", js.encode())
 
             break
         await message.ack()
