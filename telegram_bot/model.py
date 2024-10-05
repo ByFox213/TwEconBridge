@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class Env(BaseModel):
-    TELEGRAM_BOT_TOKENS: str | list
-    chat_id: str
+    TELEGRAM_BOT_TOKENS: str | list = None
+    chat_id: str = None
     nats_server: str = Field("127.0.0.1")
     nats_user: str = None
     nats_password: str = None
