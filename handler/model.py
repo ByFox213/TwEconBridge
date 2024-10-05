@@ -30,4 +30,3 @@ class MsgHandler(BaseModel):
     server_name: str | None = None
     message_thread_id: str
     text: str
-

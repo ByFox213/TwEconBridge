@@ -72,7 +72,7 @@ def generate_message_reply(_msg: telebot.types.Message, text: str = '') -> str:
     ) else text
 
 
-def check_media(message: telebot.types.Message) -> str | None:
+def check_media(message: telebot.types.Message) -> str:
     for i in [
         "sticker",
         "video",
@@ -81,7 +81,7 @@ def check_media(message: telebot.types.Message) -> str | None:
     ]:
         if getattr(message, i) is not None:
             return generate_message(message, getattr(env, i + '_string'))
-    return
+    return ""
 
 
 async def message_handler_telegram(message: MsgNats):
