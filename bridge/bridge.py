@@ -88,10 +88,10 @@ class Bridge:
             try:
                 message = await self.econ.read()
             except ConnectionError:
-                if not await self.econ.is_connected():
+                if not await self.econ.is_connected() and env.reconnection:
                     logging.debug(f"repeat: {env.server_name}({env.econ_host}:{env.econ_port})")
                     self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
-                await asyncio.sleep(5)
+                await asyncio.sleep(env.reconnection_time)
                 continue
 
             if not message:
