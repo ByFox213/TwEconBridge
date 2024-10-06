@@ -41,10 +41,11 @@ bot = bots[0]
 bots = cycle(bots)
 
 js: JetStreamContext = None
+old_message_hash, count = 0, 0
 buffer = {}
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, env.log_level.upper()),
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
 
@@ -77,7 +78,8 @@ def check_media(message: telebot.types.Message) -> str:
         "sticker",
         "video",
         "photo",
-        "audio"
+        "audio",
+        "voice"
     ]:
         if getattr(message, i) is not None:
             return generate_message(message, getattr(env, i + '_string'))
@@ -85,25 +87,34 @@ def check_media(message: telebot.types.Message) -> str:
 
 
 async def message_handler_telegram(message: MsgNats):
+    global old_message_hash, count
     """Takes a message from nats and sends it to telegram."""
     await message.in_progress()
 
     msg = Msg(**json.loads(message.data.decode()))
-    text = f"{msg.name}: {msg.text}" if msg.name is not None else f"{msg.text}"
     logging.debug("teesports.%s > %s", msg.message_thread_id, msg.text)
 
     if buffer.get(msg.message_thread_id) is None:
-        buffer[msg.message_thread_id] = []
+        buffer[msg.message_thread_id] = ""
 
-    if buffer[msg.message_thread_id]:
-        text = "\n".join(buffer[msg.message_thread_id] + [text])
-        buffer[msg.message_thread_id].clear()
+    text = f"{msg.name}: {msg.text}" if msg.name is not None else f"{msg.text}"
+    buffer[msg.message_thread_id] += text + "\n"
+    count += 1
 
-    try:
-        await next(bots).send_message(env.chat_id, text, message_thread_id=msg.message_thread_id)
-    except ApiTelegramException:
-        logging.debug("Заглушка ApiTelegramException")
-        buffer[msg.message_thread_id].append(text)
+    text_hash = hash(text)
+
+    if old_message_hash != text_hash or count >= env.repetition:
+        old_message_hash, count = text_hash, 0
+        try:
+            await next(bots).send_message(
+                env.chat_id,
+                buffer[msg.message_thread_id],
+                message_thread_id=msg.message_thread_id
+            )
+        except ApiTelegramException:
+            logging.debug("ApiTelegramException occurred")
+        else:
+            buffer[msg.message_thread_id] = ""
 
     return await message.ack()
 
@@ -115,25 +126,31 @@ async def main():
         user=env.nats_user,
         password=env.nats_password
     )
-    logging.info("nats connected")
     js = nc.jetstream()
+    logging.info("nats connected")
 
     # await js.delete_stream("teesports")
     await js.add_stream(name='teesports', subjects=['teesports.*'], max_msgs=5000)
     await js.subscribe("teesports.messages", "telegram_bot", cb=message_handler_telegram)
     logging.info("nats js subscribe \"teesports.messages\"")
+    logging.info("bot is running")
 
     await bot.infinity_polling()
 
 
-@bot.message_handler(content_types=["photo", "sticker", "sticker", "audio"])
+@bot.message_handler(content_types=["photo", "sticker", "sticker", "audio", "voice"])
 async def echo_media(message: telebot.types.Message):
     if js is None or message is None:
         return
 
+    text = (generate_message_reply(message) + check_media(message))[:255].encode()
+
     await js.publish(
         f"teesports.{message.message_thread_id}",
-        (generate_message_reply(message) + check_media(message))[:255].encode()
+        text,
+        headers={
+            "Nats-Msg-Id": f"{message.from_user.id}_{message.date}_{hash(text)}_{message.chat.id}"
+        }
     )
 
 
@@ -142,9 +159,14 @@ async def echo_text(message: telebot.types.Message):
     if js is None or message is None:
         return
 
+    text = (generate_message_reply(message) + generate_message(message))[:255].encode()
+
     await js.publish(
         f"teesports.{message.message_thread_id}",
-        (generate_message_reply(message) + generate_message(message))[:255].encode()
+        text,
+        headers={
+            "Nats-Msg-Id": f"{message.from_user.id}_{message.date}_{hash(text)}_{message.chat.id}"
+        }
     )
 
 

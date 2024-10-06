@@ -26,7 +26,7 @@ env = get_data_env(Env(**os.environ))
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, env.log_level.upper()),
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
 
@@ -59,7 +59,6 @@ class Bridge:
             cb=self.message_handler_bridge
         )
         logging.info("nats js subscribe \"teesports.%s\"", env.message_thread_id)
-        print("connected to econ and nats")
 
     async def message_handler_bridge(self, message):
         await message.in_progress()
@@ -68,7 +67,7 @@ class Bridge:
         await self.econ.message(
             data
             .replace("\"", "\\\"")
-            .replace("\'", "\\'")
+            .replace("\'", "\\\'")
             .replace("\\", "\\\\")
         )
 
@@ -80,7 +79,8 @@ class Bridge:
         logging.info("nats connected and econ connected")
 
         if env.message_thread_id is None:
-            raise ValueError("channel_id is None")
+            raise ValueError("message_thread_id is None")
+        logging.info("bridge launched")
         await self.message_checker()
 
     async def message_checker(self):
@@ -88,7 +88,9 @@ class Bridge:
             try:
                 message = await self.econ.read()
             except ConnectionError:
-                if not await self.econ.is_connected() and env.reconnection:
+                if not env.reconnection:
+                    break
+                if not await self.econ.is_connected():
                     logging.debug("repeat: %s(%s:%s)", (env.server_name, env.econ_host, env.econ_port))
                     self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
                 await asyncio.sleep(env.reconnection_time)
@@ -107,7 +109,10 @@ class Bridge:
             )
 
             logging.debug("teesports.handler > %s", js)
-            await self.js.publish("teesports.handler", js.encode())
+            await self.js.publish(
+                "teesports.handler",
+                js.encode()
+            )
 
 
 if __name__ == '__main__':

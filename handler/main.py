@@ -27,7 +27,7 @@ load_dotenv()
 env = get_data_env(Env(**os.environ))
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, env.log_level.upper()),
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
 
@@ -67,7 +67,6 @@ class Handler:
             cb=self.message_handler_bridge
         )
         logging.info("nats js subscribe \"teesports.handler\"")
-        print("connected to econ and nats")
 
     async def message_handler_bridge(self, message):
         await message.in_progress()
@@ -76,7 +75,6 @@ class Handler:
                 message.data.decode()
             )
         )
-        name = None
         for pattern in self.patterns:
             regex = pattern.regex.findall(msg.text)
             if not regex:
@@ -92,9 +90,10 @@ class Handler:
             ).model_dump_json()
 
             logging.debug("teesports.messages > %s", js)
-            await self.js.publish("teesports.messages", js.encode())
-
-            break
+            await self.js.publish(
+                "teesports.messages",
+                js.encode()
+            )
         await message.ack()
 
     async def main(self):

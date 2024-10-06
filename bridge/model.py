@@ -11,5 +11,6 @@ class Env(BaseModel):
     econ_port: int = Field(8303)
     econ_password: str = Field("")
     auth_message: str = None
+    log_level: str = Field("info")
     reconnection: bool = Field(False)
     reconnection_time: int = Field(5)
