@@ -1,0 +1,5 @@
+nats-py
+pyTelegramBotAPI
+python-dotenv
+pydantic
+PyYaml

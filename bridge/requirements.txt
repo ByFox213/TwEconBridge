@@ -1,0 +1,5 @@
+nats-py
+ddecon
+python-dotenv
+pydantic
+PyYaml
