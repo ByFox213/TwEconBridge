@@ -3,4 +3,4 @@ ADD ./ /tw
 ADD ../util /tw/util
 WORKDIR /tw
 RUN pip install -r requirements.txt
-ENTRYPOINT ["python", "/tw/bridge.py"]
+ENTRYPOINT ["python", "-u", "/tw/bridge.py"]

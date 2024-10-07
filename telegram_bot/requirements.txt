@@ -1,3 +1,4 @@
+aiohttp
 nats-py
 pyTelegramBotAPI
 python-dotenv
