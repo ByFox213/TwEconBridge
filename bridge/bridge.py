@@ -1,28 +1,16 @@
 import asyncio
 import json
 import logging
-import os
 
 import nats
-import yaml
 from ddecon import AsyncECON
 from dotenv import load_dotenv
 
 from model import Env
-
-
-def get_data_env(_env: Env) -> Env:
-    if os.path.exists("./config.yaml"):
-        with open('./config.yaml', encoding="utf-8") as fh:
-            data = yaml.load(fh, Loader=yaml.FullLoader)
-        _yaml = Env(**data) if data is not None else None
-        if _yaml is not None:
-            return _yaml
-    return _env
-
+from util import get_data_env, nats_connect
 
 load_dotenv()
-env = get_data_env(Env(**os.environ))
+env = get_data_env(Env)
 
 
 logging.basicConfig(
@@ -44,13 +32,7 @@ class Bridge:
             env.econ_password,
             auth_message=env.auth_message.encode() if env.auth_message is not None else None
         )
-
-        self.ns = await nats.connect(
-            servers=env.nats_server,
-            user=env.nats_user,
-            password=env.nats_password
-        )
-        self.js = self.ns.jetstream()
+        self.ns, self.js = await nats_connect(env)
 
         await self.econ.connect()
         await self.js.subscribe(
@@ -84,14 +66,16 @@ class Bridge:
         await self.message_checker()
 
     async def message_checker(self):
+        logging.info("server_name=%s and message_thread_id=%s", env.server_name, env.message_thread_id)
         while True:
             try:
                 message = await self.econ.read()
             except ConnectionError:
                 if not env.reconnection:
+                    logging.error("server: %s:%s dropped connection(ConnectionError)", (env.econ_host, env.econ_port))
                     break
                 if not await self.econ.is_connected():
-                    logging.debug("repeat: %s(%s:%s)", (env.server_name, env.econ_host, env.econ_port))
+                    logging.debug("repeat: %s(%s:%s)", env.server_name, env.econ_host, env.econ_port)
                     self.econ = AsyncECON(env.econ_host, env.econ_port, env.econ_password)
                 await asyncio.sleep(env.reconnection_time)
                 continue
@@ -100,15 +84,22 @@ class Bridge:
                 await asyncio.sleep(0.5)
                 continue
 
+            try:
+                text = message.decode()[:-3]
+            except BaseException as ex:  # temp
+                logging.exception(ex)
+                logging.error("An error occurred during text processing \"%s\"", message)
+                continue
+
             js = json.dumps(
                 {
                     "server_name": env.server_name,
                     "message_thread_id": env.message_thread_id,
-                    "text": message.decode()[:-3]
+                    "text": text
                 }
             )
-
             logging.debug("teesports.handler > %s", js)
+
             await self.js.publish(
                 "teesports.handler",
                 js.encode()

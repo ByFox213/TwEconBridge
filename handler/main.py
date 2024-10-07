@@ -1,30 +1,18 @@
 import asyncio
 import json
 import logging
-import os
 import re
 
 import nats
-import yaml
 from dotenv import load_dotenv
 
 from emojies import replace_from_str
 from model import Env, MsgHandler, Msg, RegexModel
 from patterns import dd_patterns
-
-
-def get_data_env(_env: Env) -> Env:
-    if os.path.exists("./config.yaml"):
-        with open('./config.yaml', encoding="utf-8") as fh:
-            data = yaml.load(fh, Loader=yaml.FullLoader)
-        _yaml = Env(**data) if data is not None else None
-        if _yaml is not None:
-            return _yaml
-    return _env
-
+from util import get_data_env
 
 load_dotenv()
-env = get_data_env(Env(**os.environ))
+env = get_data_env(Env)
 
 logging.basicConfig(
     level=getattr(logging, env.log_level.upper()),

@@ -5,39 +5,39 @@ import logging
 import os
 from itertools import cycle
 
-import nats
 import telebot.types
-import yaml
 from dotenv import load_dotenv
 from nats.js import JetStreamContext
-from telebot.async_telebot import AsyncTeleBot
 from nats.aio.msg import Msg as MsgNats
+from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_helper import ApiTelegramException
+from telebot.util import split_string
 
 from model import Env, Msg
 from emojies import replace_from_emoji
+from util import nats_connect, get_data_env
 
 
-def get_data_env(_env: Env) -> Env:
-    if os.path.exists("./config.yaml"):
-        with open('./config.yaml', encoding="utf-8") as fh:
-            data = yaml.load(fh, Loader=yaml.FullLoader)
-        _yaml = Env(**data) if data is not None else None
-        if _yaml is not None:
-            return _yaml
-    return _env.model_copy(update={
-        "TELEGRAM_BOT_TOKENS": ast.literal_eval(_env.TELEGRAM_BOT_TOKENS)
-    })
+def get_env(x):
+    modal = x(**os.environ)
+    return modal.model_copy(
+        update={"TELEGRAM_BOT_TOKENS": ast.literal_eval(modal.TELEGRAM_BOT_TOKENS)}
+    )
 
 
 load_dotenv()
-env = get_data_env(Env(**os.environ))
+env = get_data_env(
+    Env,
+    get_env
+)
 
 bots = [
     AsyncTeleBot(token)
     for token in env.TELEGRAM_BOT_TOKENS
 ]  # Bypass rate limit
 bot = bots[0]
+
+logging.info("count bots: %s", len(bots))
 bots = cycle(bots)
 
 js: JetStreamContext = None
@@ -45,9 +45,10 @@ old_message_hash, count = 0, 0
 buffer = {}
 
 logging.basicConfig(
-    level=getattr(logging, env.log_level.upper()),
     format='%(asctime)s:%(levelname)s:%(name)s: %(message)s'
 )
+log = logging.getLogger("root")
+log.setLevel(getattr(logging, env.log_level.upper()))
 
 
 def generate_message(_msg: telebot.types.Message, text: str = None) -> str:
@@ -89,6 +90,7 @@ def check_media(message: telebot.types.Message) -> str:
 async def message_handler_telegram(message: MsgNats):
     global old_message_hash, count
     """Takes a message from nats and sends it to telegram."""
+
     await message.in_progress()
 
     msg = Msg(**json.loads(message.data.decode()))
@@ -105,29 +107,28 @@ async def message_handler_telegram(message: MsgNats):
 
     if old_message_hash != text_hash or count >= env.repetition:
         old_message_hash, count = text_hash, 0
-        try:
-            await next(bots).send_message(
-                env.chat_id,
-                buffer[msg.message_thread_id],
-                message_thread_id=msg.message_thread_id
-            )
-        except ApiTelegramException:
-            logging.debug("ApiTelegramException occurred")
-        else:
-            buffer[msg.message_thread_id] = ""
+        list_text = [buffer[msg.message_thread_id]]
+        if len(buffer[msg.message_thread_id]) > 4000:
+            list_text = split_string(list_text[0], 2000)
+        for i in list_text:
+            try:
+                await next(bots).send_message(
+                    env.chat_id,
+                    i,
+                    message_thread_id=msg.message_thread_id,
+                    timeout=10
+                )
+            except ApiTelegramException:
+                logging.debug("ApiTelegramException occurred")
+            else:
+                buffer[msg.message_thread_id] = ""
 
     return await message.ack()
 
 
 async def main():
     global js
-    nc = await nats.connect(
-        servers=env.nats_server,
-        user=env.nats_user,
-        password=env.nats_password
-    )
-    js = nc.jetstream()
-    logging.info("nats connected")
+    nc, js = await nats_connect(env)
 
     # await js.delete_stream("teesports")
     await js.add_stream(name='teesports', subjects=['teesports.*'], max_msgs=5000)
@@ -135,7 +136,7 @@ async def main():
     logging.info("nats js subscribe \"teesports.messages\"")
     logging.info("bot is running")
 
-    await bot.infinity_polling()
+    await bot.infinity_polling(logger_level=logging.DEBUG)
 
 
 @bot.message_handler(content_types=["photo", "sticker", "sticker", "audio", "voice"])
