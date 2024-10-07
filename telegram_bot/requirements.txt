@@ -1,7 +1,6 @@
 aiohttp
 nats-py
 pyTelegramBotAPI
-aiohttp
 python-dotenv
 pydantic
 PyYaml
