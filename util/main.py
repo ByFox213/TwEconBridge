@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import TypeVar, Callable, Optional
 
 import nats
@@ -64,3 +65,29 @@ def format_mention(nickname: Optional[str]) -> Optional[str]:
     if '@' in nickname and len(nickname) > 1:
         return nickname.replace('@', '@-')
     return nickname
+
+
+def text_format(text: str, text_list: Optional[list]):
+    if text_list is None:
+        return text
+
+    text_ = str(text)
+    for r, t in text_list:
+        text_ = text_.replace(r, t, 1)
+
+    return text_
+
+
+def regex_format(text: str, regex_: Optional[list[re.Pattern]]):
+    if regex_ is None:
+        return text
+
+    text_ = str(text)
+    for reg, to in regex_:
+        regex = reg.findall(text)
+        if not regex:
+            continue
+
+        text_ = text_.replace(regex[0], to, 1)
+    return text_
+

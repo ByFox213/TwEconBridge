@@ -71,7 +71,7 @@ class Bridge:
                 message = await self.econ.read()
             except ConnectionError:
                 if not env.reconnection:
-                    logging.error("server: %s:%s dropped connection(ConnectionError)", (env.econ_host, env.econ_port))
+                    logging.error("server: %s:%s dropped connection(ConnectionError)", env.econ_host, env.econ_port)
                     break
                 if not await self.econ.is_connected():
                     logging.debug("repeat: %s(%s:%s)", env.server_name, env.econ_host, env.econ_port)

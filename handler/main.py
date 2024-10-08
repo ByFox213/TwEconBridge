@@ -10,7 +10,7 @@ from emojies import replace_from_str
 from model import Env, MsgHandler, Msg, RegexModel
 from patterns import dd_patterns
 from util import get_data_env, nats_connect
-from util.main import format_mention
+from util.main import format_mention, text_format, regex_format
 
 load_dotenv()
 env = get_data_env(Env)
@@ -42,6 +42,12 @@ class Handler:
             RegexModel(name=name, regex=re.compile(regex), data=data)
             for name, (regex, data) in dd_patterns.copy().items()
         ]
+        self.chat_regex = ([
+            (re.compile(regex), to) for regex, to in env.chat_regex
+        ] if env.chat_regex is not None else [])
+        self.nickname_regex = ([
+            (re.compile(regex), to) for regex, to in env.nickname_regex
+        ] if env.nickname_regex is not None else [])
 
     async def connect(self):
         self.ns, self.js = await nats_connect(env)
@@ -71,8 +77,16 @@ class Handler:
                 message_thread_id=msg.message_thread_id,
                 server_name=msg.server_name,
                 type=pattern.name,
-                name=format_mention(name),
-                text=replace_from_str(text)
+                name=format_mention(
+                    regex_format(
+                        text_format(name, env.block_text_in_nickname), self.nickname_regex
+                    )
+                ),
+                text=replace_from_str(
+                    regex_format(
+                        text_format(text, env.block_text_in_chat), self.chat_regex
+                    )
+                )
             ).model_dump_json()
 
             logging.debug("teesports.messages > %s", js)

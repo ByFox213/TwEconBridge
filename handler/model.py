@@ -11,6 +11,10 @@ class Env(BaseModel):
     text: str = Field("{text}: {player}")
     text_leave: str = Field("leave player")
     text_join: str = Field("join player")
+    nickname_regex: str | list = Field([])
+    block_text_in_nickname: str | list = Field([["tw/", ""], ["twitch.tv/", ""]])
+    chat_regex: str | list = Field([])
+    block_text_in_chat: str | list = Field([])
 
 
 class RegexModel(BaseModel):
