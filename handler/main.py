@@ -94,6 +94,7 @@ class Handler:
                 "teesports.messages",
                 js.encode()
             )
+            await message.ack()
             break
         await message.ack()
 
