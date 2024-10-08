@@ -2,14 +2,15 @@ import asyncio
 import json
 import logging
 import re
+from datetime import datetime
 
-import nats
 from dotenv import load_dotenv
 
 from emojies import replace_from_str
 from model import Env, MsgHandler, Msg, RegexModel
 from patterns import dd_patterns
-from util import get_data_env
+from util import get_data_env, nats_connect
+from util.main import format_mention
 
 load_dotenv()
 env = get_data_env(Env)
@@ -23,17 +24,18 @@ logging.basicConfig(
 def generate_text(reg, pattern) -> tuple:
     if len(reg) == 2:
         return reg
-    return None, env.text.format(
+    return None, format_mention(env.text.format(
         player=reg,
         text=pattern.data.format(
             text_leave=env.text_leave,
             text_join=env.text_join
-        )
+        ))
     )
 
 
 class Handler:
     def __init__(self):
+        self.buffer = {}
         self.ns = None
         self.js = None
         self.patterns = [
@@ -42,12 +44,7 @@ class Handler:
         ]
 
     async def connect(self):
-        self.ns = await nats.connect(
-            servers=env.nats_server,
-            user=env.nats_user,
-            password=env.nats_password
-        )
-        self.js = self.ns.jetstream()
+        self.ns, self.js = await nats_connect(env)
 
         await self.js.subscribe(
             "teesports.handler",
@@ -69,11 +66,12 @@ class Handler:
                 continue
 
             name, text = generate_text(regex[0], pattern)
+
             js = Msg(
                 message_thread_id=msg.message_thread_id,
                 server_name=msg.server_name,
                 type=pattern.name,
-                name=name,
+                name=format_mention(name),
                 text=replace_from_str(text)
             ).model_dump_json()
 
@@ -82,6 +80,7 @@ class Handler:
                 "teesports.messages",
                 js.encode()
             )
+            break
         await message.ack()
 
     async def main(self):

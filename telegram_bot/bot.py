@@ -107,9 +107,11 @@ async def message_handler_telegram(message: MsgNats):
 
     if old_message_hash != text_hash or count >= env.repetition:
         old_message_hash, count = text_hash, 0
+
         list_text = [buffer[msg.message_thread_id]]
         if len(buffer[msg.message_thread_id]) > 4000:
             list_text = split_string(list_text[0], 2000)
+
         for i in list_text:
             try:
                 await next(bots).send_message(
