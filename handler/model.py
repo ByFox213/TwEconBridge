@@ -8,7 +8,7 @@ class Env(BaseModel):
     nats_user: str = None
     nats_password: str = None
     log_level: str = Field("info")
-    text: str = Field("{text} {player}")
+    text: str = Field("{text}: {player}")
     text_leave: str = Field("leave player")
     text_join: str = Field("join player")
     nickname_regex: str | list = Field([])
