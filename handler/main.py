@@ -80,7 +80,7 @@ class Handler:
                 name=format_mention(
                     regex_format(
                         text_format(name, env.block_text_in_nickname), self.nickname_regex
-                    )
+                    ) if name is not None else None
                 ),
                 text=replace_from_str(
                     regex_format(
