@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import re
-from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -95,7 +94,7 @@ class Handler:
                 js.encode()
             )
             await message.ack()
-            break
+            return
         await message.ack()
 
     async def main(self):

@@ -15,7 +15,9 @@ _log = logging.getLogger(__name__)
 __all__ = (
     "get_data_env",
     "nats_connect",
-    "format_mention"
+    "format_mention",
+    "text_format",
+    "regex_format"
 )
 
 
