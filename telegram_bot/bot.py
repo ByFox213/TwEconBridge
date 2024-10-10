@@ -91,8 +91,6 @@ async def message_handler_telegram(message: MsgNats):
     global old_message_hash, count
     """Takes a message from nats and sends it to telegram."""
 
-    await message.in_progress()
-
     msg = Msg(**json.loads(message.data.decode()))
     logging.debug("teesports.%s > %s", msg.message_thread_id, msg.text)
 
@@ -125,7 +123,7 @@ async def message_handler_telegram(message: MsgNats):
             else:
                 buffer[msg.message_thread_id] = ""
 
-    return await message.ack()
+    return
 
 
 async def main():
