@@ -75,8 +75,14 @@ def generate_message_reply(_msg: telebot.types.Message, text: str = '') -> str:
 
 
 def check_media(message: telebot.types.Message) -> str:
+    if message.sticker is not None:
+        return generate_message(
+            message,
+            env.sticker_string.format(
+                sticker_emoji=replace_from_emoji(message.sticker.emoji)
+            )
+        )
     for i in [
-        "sticker",
         "video",
         "photo",
         "audio",
@@ -115,15 +121,12 @@ async def message_handler_telegram(message: MsgNats):
                 await next(bots).send_message(
                     env.chat_id,
                     i,
-                    message_thread_id=msg.message_thread_id,
-                    timeout=10
+                    message_thread_id=msg.message_thread_id
                 )
             except ApiTelegramException:
                 logging.debug("ApiTelegramException occurred")
             else:
                 buffer[msg.message_thread_id] = ""
-
-    return
 
 
 async def main():

@@ -9,7 +9,7 @@ class Env(BaseModel):
     nats_password: str = None
     log_level: str = Field("info")
     text: str = Field("[TG] {name}: {text}")
-    sticker_string: str = Field("[STICKER]")
+    sticker_string: str = Field("[STICKER {sticker_emoji}]")
     video_string: str = Field("[MEDIA]")
     photo_string: str = Field("[PHOTO]")
     audio_string: str = Field("[AUDIO]")
