@@ -8,8 +8,7 @@ from dotenv import load_dotenv
 from emojies import replace_from_str
 from model import Env, MsgHandler, Msg, RegexModel
 from patterns import dd_patterns
-from util import get_data_env, nats_connect
-from util.main import format_mention, text_format, regex_format
+from util import get_data_env, nats_connect, format_mention, text_format, regex_format
 
 load_dotenv()
 env = get_data_env(Env)
