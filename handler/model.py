@@ -27,7 +27,7 @@ class Msg(BaseModel):
     server_name: str | None = None
     name: str | None = None
     message_thread_id: str | None = None
-    type: str | None
+    regex_type: str | None
     text: str | None
 
 
