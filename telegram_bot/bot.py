@@ -103,7 +103,7 @@ async def message_handler_telegram(message: MsgNats):
     if buffer.get(msg.message_thread_id) is None:
         buffer[msg.message_thread_id] = ""
 
-    text = f"{msg.name}: {msg.text}" if msg.name is not None else f"{msg.text}"
+    text = f"{msg.name}: {msg.text}" if msg.name is not None and msg.name != "" else f"{msg.text}"
     buffer[msg.message_thread_id] += text + "\n"
     count += 1
 

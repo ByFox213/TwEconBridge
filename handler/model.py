@@ -24,14 +24,14 @@ class RegexModel(BaseModel):
 
 
 class Msg(BaseModel):
-    server_name: str | None = None
+    server_name: str
     name: str | None = None
-    message_thread_id: str | None = None
-    regex_type: str | None
-    text: str | None
+    message_thread_id: str
+    regex_type: str
+    text: str
 
 
 class MsgHandler(BaseModel):
-    server_name: str | None = None
+    server_name: str
     message_thread_id: str
     text: str

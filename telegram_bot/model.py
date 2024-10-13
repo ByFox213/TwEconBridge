@@ -19,8 +19,8 @@ class Env(BaseModel):
 
 
 class Msg(BaseModel):
-    server_name: str | None = None
-    name: str | None = None
-    message_thread_id: str | None = None
-    regex_type: str | None
-    text: str | None
+    server_name: str
+    name: str | None
+    message_thread_id: int | str
+    regex_type: str
+    text: str
