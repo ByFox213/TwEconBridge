@@ -59,19 +59,18 @@ def generate_message(_msg: telebot.types.Message, text: str = None) -> str:
         else text
         if _msg.caption is None
         else f"{text} | {_msg.caption}"
-    )
+    ).replace("\n", " ")
 
 
 def generate_message_reply(_msg: telebot.types.Message, text: str = '') -> str:
-    return env.reply_string.format(
+    return (env.reply_string.format(
         replay_id=_msg.reply_to_message.id,
-        replay_msg=generate_message(_msg.reply_to_message),
-        id=_msg.id,
-        msg=generate_message(_msg.reply_to_message)
+        replay_msg=generate_message(_msg.reply_to_message)
     ) if (
             _msg.reply_to_message is not None and
             _msg.reply_to_message.text is not None
     ) else text
+    ).replace("\n", " ")
 
 
 def check_media(message: telebot.types.Message) -> str:
