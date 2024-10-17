@@ -146,7 +146,7 @@ async def echo_media(message: telebot.types.Message):
     if js is None or message is None:
         return
 
-    text = (generate_message_reply(message) + check_media(message))[:255].encode()
+    text = f"say \'{(generate_message_reply(message) + check_media(message))[:255]}\'".encode()
 
     await js.publish(
         f"teesports.{message.message_thread_id}",
@@ -162,7 +162,7 @@ async def echo_text(message: telebot.types.Message):
     if js is None or message is None:
         return
 
-    text = (generate_message_reply(message) + generate_message(message))[:255].encode()
+    text = f"say \'{(generate_message_reply(message) + generate_message(message))[:255]}\'".encode()
 
     await js.publish(
         f"teesports.{message.message_thread_id}",

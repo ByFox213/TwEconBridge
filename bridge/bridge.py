@@ -45,11 +45,12 @@ class Bridge:
         await message.in_progress()
 
         data = message.data.decode()
-        await self.econ.message(
+        await self.econ.write(
             data
             .replace("\"", "\\\"")
             .replace("\'", "\\\'")
             .replace("\\", "\\\\")
+            .encode()
         )
 
         await message.ack()
