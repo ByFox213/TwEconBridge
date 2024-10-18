@@ -54,23 +54,22 @@ log.setLevel(getattr(logging, env.log_level.upper()))
 def generate_message(_msg: telebot.types.Message, text: str = None) -> str:
     return env.text.format(
         name=_msg.from_user.first_name + (_msg.from_user.last_name or ''),
-        text=replace_from_emoji(_msg.text)
+        text=text_replace(replace_from_emoji(_msg.text))
         if text is None
         else text
         if _msg.caption is None
         else f"{text} | {_msg.caption}"
-    ).replace("\n", " ")
+    )
 
 
-def generate_message_reply(_msg: telebot.types.Message, text: str = '') -> str:
-    return (env.reply_string.format(
+def generate_message_reply(_msg: telebot.types.Message, text: str = None) -> str | None:
+    return env.reply_string.format(
         replay_id=_msg.reply_to_message.id,
-        replay_msg=generate_message(_msg.reply_to_message)
+        replay_msg=text_replace(generate_message(_msg.reply_to_message))
     ) if (
             _msg.reply_to_message is not None and
             _msg.reply_to_message.text is not None
     ) else text
-    ).replace("\n", " ")
 
 
 def check_media(message: telebot.types.Message) -> str:
@@ -127,6 +126,9 @@ async def message_handler_telegram(message: MsgNats):
             else:
                 buffer[msg.message_thread_id] = ""
 
+def text_replace(msg: str) -> str:
+    return msg.replace("\\", "\\\\").replace("\'", "\\\'").replace("\"", "\\\"").replace("\n", " ")
+
 
 async def main():
     global js
@@ -146,11 +148,13 @@ async def echo_media(message: telebot.types.Message):
     if js is None or message is None:
         return
 
-    text = f"say \'{(generate_message_reply(message) + check_media(message))[:255]}\'".encode()
+    reply = generate_message_reply(message)
+    text = f"say \"{reply[:255]}\";" if reply is not None else ""
+    text += f"say \"{check_media(message)[:255]}\""
 
     await js.publish(
         f"teesports.{message.message_thread_id}",
-        text,
+        text.encode(),
         headers={
             "Nats-Msg-Id": f"{message.from_user.id}_{message.date}_{hash(text)}_{message.chat.id}"
         }
@@ -162,11 +166,13 @@ async def echo_text(message: telebot.types.Message):
     if js is None or message is None:
         return
 
-    text = f"say \'{(generate_message_reply(message) + generate_message(message))[:255]}\'".encode()
+    reply = generate_message_reply(message)
+    text = f"say \"{reply[:255]}\";" if reply is not None else ""
+    text += f"say \"{generate_message(message)[:255]}\""
 
     await js.publish(
         f"teesports.{message.message_thread_id}",
-        text,
+        text.encode(),
         headers={
             "Nats-Msg-Id": f"{message.from_user.id}_{message.date}_{hash(text)}_{message.chat.id}"
         }

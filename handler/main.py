@@ -92,8 +92,7 @@ class Handler:
                 "teesports.messages",
                 js.encode()
             )
-            await message.ack()
-            return
+            break
         await message.ack()
 
     async def main(self):

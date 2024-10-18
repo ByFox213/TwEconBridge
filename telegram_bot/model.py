@@ -14,7 +14,7 @@ class Env(BaseModel):
     photo_string: str = Field("[PHOTO]")
     audio_string: str = Field("[AUDIO]")
     voice_string: str = Field("[VOICE]")
-    reply_string: str = Field("[Reply {replay_id}] {replay_msg}\n")
+    reply_string: str = Field("[Reply {replay_id}] {replay_msg}")
     repetition: int = Field(100)
 
 
