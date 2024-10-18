@@ -6,13 +6,7 @@ services:
     ports:
       - "4222:4222"
       - "8222:8222"
-
-  bot:
-    build: ./telegram_bot
-    environment:
-      log_level: debug
-      nats_server: nats://nats:4222
-
+      -
   bridge:
     build: ./bridge
     environment:
