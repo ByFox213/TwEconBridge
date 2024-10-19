@@ -51,11 +51,11 @@ class Handler:
         self.ns, self.js = await nats_connect(env)
 
         await self.js.subscribe(
-            "teesports.handler",
+            "tw.handler",
             "handler",
             cb=self.message_handler_bridge
         )
-        logging.info("nats js subscribe \"teesports.handler\"")
+        logging.info("nats js subscribe \"tw.handler\"")
 
     async def message_handler_bridge(self, message):
         await message.in_progress()
@@ -87,9 +87,9 @@ class Handler:
                 )
             ).model_dump_json()
 
-            logging.debug("teesports.messages > %s", js)
+            logging.debug("tw.messages > %s", js)
             await self.js.publish(
-                "teesports.messages",
+                "tw.messages",
                 js.encode()
             )
             break

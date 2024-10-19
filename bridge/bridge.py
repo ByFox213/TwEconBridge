@@ -35,11 +35,11 @@ class Bridge:
 
         await self.econ.connect()
         await self.js.subscribe(
-            f"teesports.{env.message_thread_id}",
+            f"tw.{env.message_thread_id}",
             f"bridge_{env.message_thread_id}",
             cb=self.message_handler_bridge
         )
-        logging.info("nats js subscribe \"teesports.%s\"", env.message_thread_id)
+        logging.info("nats js subscribe \"tw.%s\"", env.message_thread_id)
 
     async def message_handler_bridge(self, message):
         await message.in_progress()
@@ -54,7 +54,7 @@ class Bridge:
         )
 
         await message.ack()
-        logging.debug("teesports.chat_id > %s", data)
+        logging.debug("tw.chat_id > %s", data)
 
     async def main(self):
         await self.connect()
@@ -98,10 +98,10 @@ class Bridge:
                     "text": text
                 }
             )
-            logging.debug("teesports.handler > %s", js)
+            logging.debug("tw.handler > %s", js)
 
             await self.js.publish(
-                "teesports.handler",
+                "tw.handler",
                 js.encode()
             )
 

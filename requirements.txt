@@ -1,8 +1,7 @@
 nats-py
 ddecon
-pyTelegramBotAPI
-aiohttp
+aiogram
 python-dotenv
-nextcord
 pydantic
 PyYaml
+pytz
