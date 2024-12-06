@@ -1,3 +1,6 @@
+# Obsolete
+Use [econ-to-nats](https://github.com/teeworlds-nats/econ-to-nats) this is an updated version of this program
+
 # Install
 ```bash
 pip install -r requirements.txt
